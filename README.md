@@ -2,7 +2,7 @@
 
 A local, end-to-end fraud operations platform built with Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometheus, and Grafana.
 
-The project demonstrates a complete analyst workflow:
+The project enables a complete analyst workflow:
 
 - Synthetic transaction generation with configurable fraud patterns.
 - Bounded C++ rule detection for velocity, structuring, and device/geo changes.
@@ -13,8 +13,6 @@ The project demonstrates a complete analyst workflow:
 - Analyst login, registration, case transitions, notes, and audit-chain verification.
 - Searchable account-specific risk history.
 - Prometheus metrics and a Grafana operations dashboard.
-
-This repository is designed for local demos and portfolio review. Compose ports bind to `127.0.0.1` by default so services are not exposed to the network.
 
 ## Quick Start
 
