@@ -2,7 +2,7 @@
 
 A local fraud-operations platform that turns synthetic transaction activity into scored signals, analyst alerts, investigation cases, and observable risk history.
 
-The project combines Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometheus, and Grafana in one runnable demonstration.
+The project utilizes Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometheus, and Grafana in one runnable demonstration.
 
 ## What You Can Explore
 
