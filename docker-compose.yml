@@ -2,11 +2,11 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: fraud_detection
-      POSTGRES_USER: fraud
-      POSTGRES_PASSWORD: fraud
+      POSTGRES_DB: ${POSTGRES_DB:-fraud_detection}
+      POSTGRES_USER: ${POSTGRES_USER:-fraud}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d:ro
@@ -19,11 +19,11 @@ services:
   api-service:
     build: ./api-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/fraud_detection
-      SPRING_DATASOURCE_USERNAME: fraud
-      SPRING_DATASOURCE_PASSWORD: fraud
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-fraud_detection}
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-fraud}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-change-me-local}
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy
@@ -32,7 +32,7 @@ services:
     build: ./generator
     profiles: ["full"]
     environment:
-      DATABASE_URL: postgresql://fraud:fraud@postgres:5432/fraud_detection
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fraud}:${POSTGRES_PASSWORD:-change-me-local}@postgres:5432/${POSTGRES_DB:-fraud_detection}
     command: ["python", "generate.py", "--stream", "kafka", "--kafka-bootstrap", "kafka:9092"]
     depends_on:
       postgres:
@@ -44,7 +44,7 @@ services:
     build: ./detection-engine
     command: ["./detection-engine", "--input", "kafka", "--output", "kafka", "--kafka-brokers", "kafka:9092", "--kafka-input-topic", "transactions", "--kafka-output-topic", "scored-events", "--kafka-group", "detection-engine"]
     ports:
-      - "9101:9101"
+      - "127.0.0.1:9101:9101"
     profiles: ["full"]
     depends_on:
       kafka-init:
@@ -55,7 +55,7 @@ services:
     environment:
       MODEL_ARTIFACT: /app/models/isolation_forest.joblib
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     profiles: ["full"]
     depends_on:
       - kafka
@@ -64,7 +64,7 @@ services:
     image: prom/prometheus:v2.54.1
     profiles: ["full"]
     ports:
-      - "9090:9090"
+      - "127.0.0.1:9090:9090"
     volumes:
       - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     depends_on:
@@ -76,7 +76,7 @@ services:
     image: grafana/grafana:11.3.1
     profiles: ["full"]
     ports:
-      - "3001:3000"
+      - "127.0.0.1:3001:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
@@ -90,7 +90,7 @@ services:
     environment:
       VITE_API_TARGET: http://api-service:8080
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"
     depends_on:
       - api-service
 
@@ -108,7 +108,7 @@ services:
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: PLAINTEXT
       ALLOW_PLAINTEXT_LISTENER: "yes"
     ports:
-      - "9092:9092"
+      - "127.0.0.1:9092:9092"
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 5s

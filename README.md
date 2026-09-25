@@ -1,72 +1,126 @@
 # Fraud Detection Platform
 
-Phase 0 provides the PostgreSQL foundation and a Spring Boot CRUD API. Phase 1 adds the labeled synthetic transaction generator.
+A local, end-to-end fraud operations platform built with Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometheus, and Grafana.
 
-## Phase 0: Foundation
+The project demonstrates a complete analyst workflow:
 
-Run the database and API from the repository root:
+- Synthetic transaction generation with configurable fraud patterns.
+- Bounded C++ rule detection for velocity, structuring, and device/geo changes.
+- ML anomaly scoring with Isolation Forest.
+- Graph-based cycle and cluster evidence.
+- Weighted composite risk scoring.
+- Alert deduplication and automatic case creation.
+- Analyst login, registration, case transitions, notes, and audit-chain verification.
+- Searchable account-specific risk history.
+- Prometheus metrics and a Grafana operations dashboard.
+
+This repository is designed for local demos and portfolio review. Compose ports bind to `127.0.0.1` by default so services are not exposed to the network.
+
+## Quick Start
+
+### Requirements
+
+- Docker Desktop with Compose v2.
+- Git.
+- At least 6 GB of available Docker memory for the full stack.
+
+### Start the demo
+
+From the repository root:
 
 ```powershell
-docker compose up --build postgres api-service
+Copy-Item .env.example .env
+docker compose --profile full up --build
 ```
 
-The API is available at `http://localhost:8080`.
+Open the analyst console at [http://localhost:3000](http://localhost:3000). Register an analyst account, then use the dashboard to review alerts, investigate cases, inspect risk history, and verify audit chains.
 
-- `GET/POST /api/accounts`
-- `GET/PUT/DELETE /api/accounts/{id}`
-- `GET/POST /api/transactions`
-- `GET/PUT/DELETE /api/transactions/{id}`
+The first build downloads several images and dependencies. Later starts are faster.
 
-Validate the Compose file and Java service:
+### Demo URLs
+
+| Service | URL |
+| --- | --- |
+| Analyst console | [http://localhost:3000](http://localhost:3000) |
+| API health | [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health) |
+| ML API docs | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| Prometheus | [http://localhost:9090](http://localhost:9090) |
+| Grafana | [http://localhost:3001](http://localhost:3001) |
+
+All ports are localhost-only by default. Do not remove that restriction without adding TLS, authentication, rate limiting, and network access controls.
+
+## Demo Walkthrough
+
+1. Register an analyst account on the login screen.
+2. Open **Command center** to see signals detected, open alerts, and active cases.
+3. Open **Alert queue** and filter by Open, Investigating, Escalated, Resolved, or Dismissed.
+4. Select a case and use Investigate, Escalate, Resolve, or Dismiss.
+5. Review the workflow trail, classification explanation, risk calculation, notes, and audit verification.
+6. Open **Account risk**, search by account name or account number, and select a time range.
+7. Open Grafana to inspect service and detection metrics.
+
+The database seed scripts create repeatable demo accounts, transactions, signals, alerts, and account-risk history. They run automatically on a new database volume. To intentionally recreate all local data:
+
+```powershell
+docker compose down -v
+docker compose --profile full up --build
+```
+
+## Architecture
+
+| Component | Responsibility |
+| --- | --- |
+| `frontend/` | React analyst console with authenticated workflow UI. |
+| `api-service/` | Spring Boot API, case management, analyst auth, audit chain, and account risk endpoint. |
+| `database/` | PostgreSQL schema and idempotent demo seed migrations. |
+| `detection-engine/` | C++ bounded ingestion, feature extraction, and rule scoring. |
+| `ml-service/` | FastAPI anomaly, graph, and combined scoring endpoints. |
+| `generator/` | Synthetic normal and fraud-pattern transaction generation. |
+| `observability/` | Prometheus configuration, Grafana dashboard, and evaluation tools. |
+
+## Development Checks
+
+Validate Compose and build the application services:
 
 ```powershell
 docker compose config
 Push-Location api-service
 mvn test
 Pop-Location
-Invoke-WebRequest -UseBasicParsing http://localhost:8080/actuator/health
+Push-Location frontend
+npm run build
+Pop-Location
+docker build -t fraud-detection-engine-test detection-engine
 ```
 
-Stop Phase 0 services without deleting the database volume:
+Run the local stack in the background:
+
+```powershell
+docker compose --profile full up -d
+```
+
+Stop containers while preserving the local database:
 
 ```powershell
 docker compose down
 ```
 
-Use `docker compose down -v` only when intentionally deleting local database data.
+## Security Notes
 
-## Phase 1: Synthetic Generator
+This is a portfolio/demo deployment, not a public production deployment. The default Compose profile binds services to localhost, and `.env` is ignored by Git. Before deploying to a server:
 
-The generator supports normal traffic and independent `structuring`, `device_takeover`, `mule_cycle`, and `coordinated_burst` patterns. See [generator/README.md](generator/README.md) for dry-run, PostgreSQL, and Kafka commands.
+- Use a managed secret store and rotate database credentials.
+- Put the frontend and API behind HTTPS.
+- Disable open registration or make it invitation-only.
+- Protect Kafka, PostgreSQL, ML, metrics, and WebSocket endpoints.
+- Add rate limiting, audit logging, backups, and monitoring.
+- Store sessions in secure HTTP-only cookies or use a managed identity provider.
 
-## Phase 2: C++ Detection Engine
+## Project Notes
 
-The engine provides bounded multithreaded ingestion, fixed-size per-account ring buffers, feature extraction, JSON-configured velocity/structuring/device-geo rules, scored JSON output, TCP input, and Prometheus metrics. See [detection-engine/README.md](detection-engine/README.md).
+Detailed component documentation lives in:
 
-Build and test it with:
-
-```powershell
-docker build -t fraud-detection-engine-test detection-engine
-```
-
-The Docker build runs the C++ unit tests and compiles the native `librdkafka` consumer/producer. JSONL replay and TCP remain available as lightweight local-test adapters.
-
-The frontend and observability services remain placeholders for later phases.
-
-## Phase 4: Java Case Management
-
-Phase 4 provides alert ingestion, automatic case creation at the configured threshold, persisted case status transitions, analyst notes, hash-chain audit verification, and STOMP WebSocket topics `/topic/alerts` and `/topic/cases`. See the API endpoints under `/api/alerts` and `/api/cases`.
-
-## Phase 3: ML and Graph Service
-
-Phase 3 provides feature export, offline IsolationForest training, FastAPI `/score` and `/combined-score` endpoints, rolling NetworkX cycle/cluster detection, and weighted rule/ML/graph scoring. See [ml-service/README.md](ml-service/README.md) for build, training, and API commands.
-
-## Phase 6: Observability and Demo Evaluation
-
-Phase 6 adds Prometheus scraping for Java, C++, and Python metrics plus a provisioned Grafana operations dashboard. Start the full monitoring stack with:
-
-```powershell
-docker compose --profile full up -d postgres api-service kafka detection-engine ml-service prometheus grafana
-```
-
-Open Grafana at `http://localhost:3001` and Prometheus at `http://localhost:9090`. See [observability/README.md](observability/README.md) for the live demo and precision/recall evaluation commands.
+- [generator/README.md](generator/README.md)
+- [detection-engine/README.md](detection-engine/README.md)
+- [ml-service/README.md](ml-service/README.md)
+- [observability/README.md](observability/README.md)
