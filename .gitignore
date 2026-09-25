@@ -1,0 +1,10 @@
+target/
+*.class
+__pycache__/
+.venv/
+node_modules/
+dist/
+models/*.joblib
+.env
+.idea/
+.vscode/

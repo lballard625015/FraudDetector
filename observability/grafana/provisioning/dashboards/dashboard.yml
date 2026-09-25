@@ -1,0 +1,11 @@
+apiVersion: 1
+
+providers:
+  - name: Fraud Operations
+    orgId: 1
+    folder: Fraud Detection
+    type: file
+    disableDeletion: false
+    editable: true
+    options:
+      path: /var/lib/grafana/dashboards

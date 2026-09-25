@@ -1,0 +1,22 @@
+{
+  "annotations": {"list": []},
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {"title": "Transactions ingested", "type": "stat", "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}, "targets": [{"expr": "fraud_engine_transactions_ingested_total", "refId": "A"}]},
+    {"title": "Transactions scored", "type": "stat", "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}, "targets": [{"expr": "fraud_engine_transactions_scored_total", "refId": "A"}]},
+    {"title": "Rule triggers", "type": "stat", "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0}, "targets": [{"expr": "fraud_engine_rule_triggers_total", "refId": "A"}]},
+    {"title": "ML graph events", "type": "stat", "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0}, "targets": [{"expr": "ml_service_graph_events", "refId": "A"}]},
+    {"title": "Engine processing latency", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}, "targets": [{"expr": "fraud_engine_processing_latency_microseconds", "legendFormat": "microseconds", "refId": "A"}]},
+    {"title": "Queue depth", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}, "targets": [{"expr": "fraud_engine_queue_depth", "legendFormat": "queue", "refId": "A"}]},
+    {"title": "API request rate", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12}, "targets": [{"expr": "sum(rate(http_server_requests_seconds_count[5m]))", "legendFormat": "requests/sec", "refId": "A"}]},
+    {"title": "Parse errors", "type": "timeseries", "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12}, "targets": [{"expr": "fraud_engine_parse_errors_total", "legendFormat": "parse errors", "refId": "A"}]}
+  ],
+  "schemaVersion": 39,
+  "tags": ["fraud", "security-operations"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "title": "Fraud Operations Pipeline",
+  "uid": "fraud-operations",
+  "version": 1
+}

@@ -1,0 +1,21 @@
+{
+  "velocity": {
+    "enabled": true,
+    "window_seconds": 300,
+    "max_transactions": 5,
+    "score": 0.65
+  },
+  "structuring": {
+    "enabled": true,
+    "threshold": 10000.0,
+    "lower_bound": 9000.0,
+    "window_seconds": 3600,
+    "min_count": 3,
+    "score": 0.9
+  },
+  "device_geo_change": {
+    "enabled": true,
+    "max_distance_km": 500.0,
+    "score": 0.8
+  }
+}
