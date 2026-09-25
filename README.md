@@ -1,29 +1,36 @@
 # Fraud Detection Platform
 
-A local, end-to-end fraud operations platform built with Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometheus, and Grafana.
+A local fraud-operations platform that turns synthetic transaction activity into scored signals, analyst alerts, investigation cases, and observable risk history.
 
-The project enables a complete analyst workflow:
+The project combines Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometheus, and Grafana in one runnable demonstration.
 
-- Synthetic transaction generation with configurable fraud patterns.
-- Bounded C++ rule detection for velocity, structuring, and device/geo changes.
-- ML anomaly scoring with Isolation Forest.
-- Graph-based cycle and cluster evidence.
+## What You Can Explore
+
+- Synthetic transactions with structuring, device takeover, mule cycle, and coordinated burst patterns.
+- C++ rule detection for velocity, structuring, and device/geo changes.
+- Isolation Forest anomaly scoring.
+- Graph evidence for connected accounts, cycles, and clusters.
 - Weighted composite risk scoring.
 - Alert deduplication and automatic case creation.
-- Analyst login, registration, case transitions, notes, and audit-chain verification.
+- Analyst registration and login.
+- Case investigation, escalation, resolution, dismissal, notes, and audit-chain verification.
 - Searchable account-specific risk history.
-- Read-only Investigation Copilot for case evidence review.
-- Prometheus metrics and a Grafana operations dashboard.
+- A read-only Investigation Copilot on every dashboard page.
+- Prometheus metrics and a provisioned Grafana dashboard.
 
-## Quick Start
+This repository is configured for local portfolio demonstrations. Compose services bind to localhost by default.
 
-### Requirements
+## Run the Demo
 
-- Docker Desktop with Compose v2.
+### Prerequisites
+
+Install:
+
+- Docker Desktop with Docker Compose v2.
 - Git.
-- At least 6 GB of available Docker memory for the full stack.
+- At least 6 GB of memory available to Docker for the full stack.
 
-### Start the demo
+### Start
 
 From the repository root:
 
@@ -32,106 +39,136 @@ Copy-Item .env.example .env
 docker compose --profile full up --build
 ```
 
-Open the analyst console at [http://localhost:3000](http://localhost:3000). Register an analyst account, then use the dashboard to review alerts, investigate cases, inspect risk history, and verify audit chains.
+The first build downloads the required images and dependencies. Future starts are faster.
 
-Every dashboard page includes a local, read-only **Investigation Copilot**. It works without external credentials and requires analyst confirmation for workflow actions.
+Open the application at:
 
-The first build downloads several images and dependencies. Later starts are faster.
+[http://localhost:3000](http://localhost:3000)
 
-### Demo URLs
+Register an analyst account on the login screen to begin.
+
+## Suggested Demo Flow
+
+1. Open **Command center** to see detected signals, open alerts, and active cases.
+2. Open **Alert queue** and filter by Open, Investigating, Escalated, Resolved, or Dismissed.
+3. Select an alert or case to open its investigation workspace.
+4. Use Investigate, Escalate, Resolve, or Dismiss and observe the status and counters update.
+5. Add an analyst note and verify the audit chain.
+6. Ask the **Investigation Copilot** what is happening on the current page or why a case deserves review.
+7. Open **Account risk**, search by account name or account number, and select a time range.
+8. Open Grafana to inspect service and detection metrics.
+
+The Copilot is read-only. It can summarize visible case evidence, but it cannot change a case state.
+
+## Service URLs
 
 | Service | URL |
 | --- | --- |
 | Analyst console | [http://localhost:3000](http://localhost:3000) |
 | API health | [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health) |
-| ML API docs | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| ML API documentation | [http://localhost:8000/docs](http://localhost:8000/docs) |
 | Copilot health | [http://localhost:8010/health](http://localhost:8010/health) |
 | Prometheus | [http://localhost:9090](http://localhost:9090) |
 | Grafana | [http://localhost:3001](http://localhost:3001) |
 
-All ports are localhost-only by default. Do not remove that restriction without adding TLS, authentication, rate limiting, and network access controls.
+## How It Fits Together
 
-## Demo Walkthrough
+```text
+Synthetic transactions
+        |
+        v
+Kafka and PostgreSQL
+        |
+        +--> C++ rule engine
+        +--> ML anomaly service
+        +--> Graph detector
+                    |
+                    v
+             Composite risk score
+                    |
+                    v
+              Spring Boot API
+                    |
+                    v
+             React analyst console
+                    |
+                    +--> Investigation Copilot
+                    +--> Prometheus / Grafana
+```
 
-1. Register an analyst account on the login screen.
-2. Open **Command center** to see signals detected, open alerts, and active cases.
-3. Open **Alert queue** and filter by Open, Investigating, Escalated, Resolved, or Dismissed.
-4. Select a case and use Investigate, Escalate, Resolve, or Dismiss.
-5. Review the workflow trail, classification explanation, risk calculation, notes, and audit verification.
-6. Open **Account risk**, search by account name or account number, and select a time range.
-7. Ask the **Investigation Copilot** why a case is worth reviewing or what to inspect next. It is read-only and cites the case/timeline tools it used.
-8. Open Grafana to inspect service and detection metrics.
+| Directory | Purpose |
+| --- | --- |
+| `frontend/` | React analyst console and account-risk UI. |
+| `api-service/` | Spring Boot API, authentication, alerts, cases, audit events, and account risk. |
+| `database/` | PostgreSQL schema and repeatable demo seed scripts. |
+| `detection-engine/` | C++ bounded ingestion, feature extraction, and rule scoring. |
+| `ml-service/` | FastAPI anomaly, graph, and combined scoring service. |
+| `agent-service/` | Read-only Investigation Copilot service. |
+| `generator/` | Synthetic transaction generation. |
+| `observability/` | Prometheus, Grafana, and evaluation tooling. |
 
-The database seed scripts create repeatable demo accounts, transactions, signals, alerts, and account-risk history. They run automatically on a new database volume. To intentionally recreate all local data:
+## Demo Data
+
+The database initialization scripts create accounts, transactions, signals, alerts, cases, and risk-history points. Seed data is repeatable and is applied automatically when PostgreSQL starts with a new volume.
+
+To completely reset local demo data:
 
 ```powershell
 docker compose down -v
 docker compose --profile full up --build
 ```
 
-## Architecture
-
-| Component | Responsibility |
-| --- | --- |
-| `frontend/` | React analyst console with authenticated workflow UI. |
-| `api-service/` | Spring Boot API, case management, analyst auth, audit chain, and account risk endpoint. |
-| `database/` | PostgreSQL schema and idempotent demo seed migrations. |
-| `detection-engine/` | C++ bounded ingestion, feature extraction, and rule scoring. |
-| `ml-service/` | FastAPI anomaly, graph, and combined scoring endpoints. |
-| `agent-service/` | Read-only case investigation copilot with authenticated API tools. |
-| `generator/` | Synthetic normal and fraud-pattern transaction generation. |
-| `observability/` | Prometheus configuration, Grafana dashboard, and evaluation tools. |
+The `-v` flag deletes the local PostgreSQL and Grafana volumes. Use it only when you want a clean demonstration database.
 
 ## Development Checks
 
-Validate Compose and build the application services:
+Validate the Compose configuration and build the main services:
 
 ```powershell
 docker compose config
+
 Push-Location api-service
 mvn test
 Pop-Location
+
 Push-Location frontend
 npm run build
 Pop-Location
+
 docker build -t fraud-detection-engine-test detection-engine
 ```
 
-Run the local stack in the background:
+Run the stack in the background:
 
 ```powershell
 docker compose --profile full up -d
 ```
 
-Stop containers while preserving the local database:
+Stop containers while preserving database data:
 
 ```powershell
 docker compose down
 ```
 
-## Security Notes
+## Configuration
 
-This is a portfolio/demo deployment, not a public production deployment. The default Compose profile binds services to localhost, and `.env` is ignored by Git. Before deploying to a server:
+Copy `.env.example` to `.env` before starting the stack. The `.env` file is ignored by Git.
 
-- Use a managed secret store and rotate database credentials.
-- Put the frontend and API behind HTTPS.
-- Disable open registration or make it invitation-only.
-- Protect Kafka, PostgreSQL, ML, metrics, and WebSocket endpoints.
-- Add rate limiting, audit logging, backups, and monitoring.
-- Store sessions in secure HTTP-only cookies or use a managed identity provider.
+The local configuration includes:
 
-If you already had a local database volume from an older checkout, the demo startup may need the local database role password aligned with `.env`. The destructive reset is the simplest path:
+- PostgreSQL database, user, and password values.
+- Localhost-only published ports.
+- The default fraud case threshold.
 
-```powershell
-docker compose down -v
-docker compose --profile full up --build
-```
+Do not commit passwords, API keys, tokens, or other secrets.
 
-## Project Notes
+## Security Boundary
 
-Detailed component documentation lives in:
+This project is intended for local demos and portfolio review, not direct production deployment. Before running it on a public server, add HTTPS, managed secrets, invitation-only registration, rate limiting, protected Kafka/PostgreSQL/metrics endpoints, secure HTTP-only sessions, backups, and production network controls.
 
-- [generator/README.md](generator/README.md)
-- [detection-engine/README.md](detection-engine/README.md)
-- [ml-service/README.md](ml-service/README.md)
-- [observability/README.md](observability/README.md)
+## Component Documentation
+
+- [Generator guide](generator/README.md)
+- [Detection engine guide](detection-engine/README.md)
+- [ML and graph service guide](ml-service/README.md)
+- [Observability guide](observability/README.md)
