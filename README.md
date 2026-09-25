@@ -15,7 +15,8 @@ The project utilizes Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometh
 - Analyst registration and login.
 - Case investigation, escalation, resolution, dismissal, notes, and audit-chain verification.
 - Searchable account-specific risk history.
-- A read-only Investigation Copilot on every dashboard page.
+- A page-aware Investigation Copilot on every dashboard page.
+- Confirmation-based Copilot proposals for Investigate, Escalate, Resolve, and Dismiss actions.
 - Prometheus metrics and a provisioned Grafana dashboard.
 
 Compose services bind to localhost by default.
@@ -55,10 +56,11 @@ Register an analyst account on the login screen to begin.
 4. Use Investigate, Escalate, Resolve, or Dismiss and observe the status and counters update.
 5. Add an analyst note and verify the audit chain.
 6. Ask the **Investigation Copilot** what is happening on the current page or why a case deserves review.
-7. Open **Account risk**, search by account name or account number, and select a time range.
-8. Open Grafana to inspect service and detection metrics.
+7. Select a case before requesting a status action. Review the Copilot proposal and explicitly confirm it before the case changes.
+8. Open **Account risk**, search by account name or account number, and select a time range.
+9. Open Grafana to inspect service and detection metrics.
 
-The Copilot is read-only. It can summarize visible case evidence, but it cannot change a case state.
+The Copilot is read-only until confirmation. It can summarize page and case evidence, propose a workflow action, and show the reason for that proposal. It cannot change a case state without an analyst confirmation click.
 
 ## Service URLs
 
@@ -103,13 +105,13 @@ Kafka and PostgreSQL
 | `database/` | PostgreSQL schema and repeatable demo seed scripts. |
 | `detection-engine/` | C++ bounded ingestion, feature extraction, and rule scoring. |
 | `ml-service/` | FastAPI anomaly, graph, and combined scoring service. |
-| `agent-service/` | Read-only Investigation Copilot service. |
+| `agent-service/` | Page-aware Investigation Copilot with authenticated read-only tools and confirmation proposals. |
 | `generator/` | Synthetic transaction generation. |
 | `observability/` | Prometheus, Grafana, and evaluation tooling. |
 
 ## Demo Data
 
-The database initialization scripts create accounts, transactions, signals, alerts, cases, and risk-history points. Seed data is repeatable and is applied automatically when PostgreSQL starts with a new volume.
+The database initialization scripts create accounts, transactions, signals, alerts, cases, and risk-history points. Demo history is seeded across every account so account-risk charts have meaningful data. Seed data is repeatable and is applied automatically when PostgreSQL starts with a new volume.
 
 To completely reset local demo data:
 
