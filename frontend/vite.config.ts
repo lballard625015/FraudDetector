@@ -3,6 +3,7 @@ import react from '@vitejs/plugin-react'
 
 const runtime = globalThis as typeof globalThis & { process?: { env?: Record<string, string | undefined> } }
 const apiTarget = runtime.process?.env?.VITE_API_TARGET ?? 'http://localhost:8080'
+const agentTarget = runtime.process?.env?.VITE_AGENT_TARGET ?? 'http://localhost:8010'
 
 export default defineConfig({
   plugins: [react()],
@@ -10,6 +11,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api': apiTarget,
+      '/copilot': agentTarget,
       '/actuator': apiTarget,
       '/ws': { target: apiTarget.replace(/^http/, 'ws'), ws: true },
     },

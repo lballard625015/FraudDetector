@@ -12,6 +12,7 @@ The project enables a complete analyst workflow:
 - Alert deduplication and automatic case creation.
 - Analyst login, registration, case transitions, notes, and audit-chain verification.
 - Searchable account-specific risk history.
+- Read-only Investigation Copilot for case evidence review.
 - Prometheus metrics and a Grafana operations dashboard.
 
 ## Quick Start
@@ -33,6 +34,8 @@ docker compose --profile full up --build
 
 Open the analyst console at [http://localhost:3000](http://localhost:3000). Register an analyst account, then use the dashboard to review alerts, investigate cases, inspect risk history, and verify audit chains.
 
+Every dashboard page includes a local, read-only **Investigation Copilot**. It works without external credentials and requires analyst confirmation for workflow actions.
+
 The first build downloads several images and dependencies. Later starts are faster.
 
 ### Demo URLs
@@ -42,6 +45,7 @@ The first build downloads several images and dependencies. Later starts are fast
 | Analyst console | [http://localhost:3000](http://localhost:3000) |
 | API health | [http://localhost:8080/actuator/health](http://localhost:8080/actuator/health) |
 | ML API docs | [http://localhost:8000/docs](http://localhost:8000/docs) |
+| Copilot health | [http://localhost:8010/health](http://localhost:8010/health) |
 | Prometheus | [http://localhost:9090](http://localhost:9090) |
 | Grafana | [http://localhost:3001](http://localhost:3001) |
 
@@ -55,7 +59,8 @@ All ports are localhost-only by default. Do not remove that restriction without 
 4. Select a case and use Investigate, Escalate, Resolve, or Dismiss.
 5. Review the workflow trail, classification explanation, risk calculation, notes, and audit verification.
 6. Open **Account risk**, search by account name or account number, and select a time range.
-7. Open Grafana to inspect service and detection metrics.
+7. Ask the **Investigation Copilot** why a case is worth reviewing or what to inspect next. It is read-only and cites the case/timeline tools it used.
+8. Open Grafana to inspect service and detection metrics.
 
 The database seed scripts create repeatable demo accounts, transactions, signals, alerts, and account-risk history. They run automatically on a new database volume. To intentionally recreate all local data:
 
@@ -73,6 +78,7 @@ docker compose --profile full up --build
 | `database/` | PostgreSQL schema and idempotent demo seed migrations. |
 | `detection-engine/` | C++ bounded ingestion, feature extraction, and rule scoring. |
 | `ml-service/` | FastAPI anomaly, graph, and combined scoring endpoints. |
+| `agent-service/` | Read-only case investigation copilot with authenticated API tools. |
 | `generator/` | Synthetic normal and fraud-pattern transaction generation. |
 | `observability/` | Prometheus configuration, Grafana dashboard, and evaluation tools. |
 
@@ -113,6 +119,13 @@ This is a portfolio/demo deployment, not a public production deployment. The def
 - Protect Kafka, PostgreSQL, ML, metrics, and WebSocket endpoints.
 - Add rate limiting, audit logging, backups, and monitoring.
 - Store sessions in secure HTTP-only cookies or use a managed identity provider.
+
+If you already had a local database volume from an older checkout, the demo startup may need the local database role password aligned with `.env`. The destructive reset is the simplest path:
+
+```powershell
+docker compose down -v
+docker compose --profile full up --build
+```
 
 ## Project Notes
 

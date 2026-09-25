@@ -60,6 +60,16 @@ services:
     depends_on:
       - kafka
 
+  agent-service:
+    build: ./agent-service
+    environment:
+      API_BASE_URL: http://api-service:8080
+    ports:
+      - "127.0.0.1:8010:8010"
+    profiles: ["full"]
+    depends_on:
+      - api-service
+
   prometheus:
     image: prom/prometheus:v2.54.1
     profiles: ["full"]
@@ -89,6 +99,7 @@ services:
     profiles: ["full"]
     environment:
       VITE_API_TARGET: http://api-service:8080
+      VITE_AGENT_TARGET: http://agent-service:8010
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:

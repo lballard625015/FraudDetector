@@ -130,3 +130,17 @@ export const addCaseNote = (caseId: string, note: string) =>
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ note, author: 'analyst' }),
   })
+
+export const askCopilot = (caseId: string, question: string) =>
+  request('/copilot/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ case_id: caseId, question }),
+  }).then((response) => json<{ answer: string; tools_used: string[]; read_only: boolean }>(response))
+
+export const askAssistant = (page: string, question: string, provider: 'copilot' | 'claude', caseId?: string) =>
+  request('/copilot/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ page, question, provider, ...(caseId ? { case_id: caseId } : {}) }),
+  }).then((response) => json<{ answer: string; tools_used: string[]; provider: string; read_only: boolean }>(response))
