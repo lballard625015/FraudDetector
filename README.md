@@ -18,7 +18,7 @@ The project combines Spring Boot, PostgreSQL, C++, Python, React, Kafka, Prometh
 - A read-only Investigation Copilot on every dashboard page.
 - Prometheus metrics and a provisioned Grafana dashboard.
 
-This repository is configured for local portfolio demonstrations. Compose services bind to localhost by default.
+Compose services bind to localhost by default.
 
 ## Run the Demo
 
@@ -164,7 +164,7 @@ Do not commit passwords, API keys, tokens, or other secrets.
 
 ## Security Boundary
 
-This project is intended for local demos and portfolio review, not direct production deployment. Before running it on a public server, add HTTPS, managed secrets, invitation-only registration, rate limiting, protected Kafka/PostgreSQL/metrics endpoints, secure HTTP-only sessions, backups, and production network controls.
+This project is built locally. Before running it on a public server, add HTTPS, managed secrets, invitation-only registration, rate limiting, protected Kafka/PostgreSQL/metrics endpoints, secure HTTP-only sessions, backups, and production network controls.
 
 ## Component Documentation
 
