@@ -143,4 +143,4 @@ export const askAssistant = (page: string, question: string, provider: 'copilot'
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ page, question, provider, ...(caseId ? { case_id: caseId } : {}) }),
-  }).then((response) => json<{ answer: string; tools_used: string[]; provider: string; read_only: boolean }>(response))
+  }).then((response) => json<{ answer: string; tools_used: string[]; provider: string; proposed_action?: { type: string; status: string; label: string; reason: string }; read_only: boolean }>(response))

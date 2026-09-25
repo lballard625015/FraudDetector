@@ -27,6 +27,7 @@ class CopilotResponse(BaseModel):
     answer: str
     tools_used: list[str]
     provider: str
+    proposed_action: dict[str, str] | None = None
     read_only: bool = True
 
 
@@ -83,6 +84,22 @@ def build_answer(case: dict[str, Any] | None, timeline: list[dict[str, Any]], pa
     )
 
 
+def proposed_action(question: str, case: dict[str, Any] | None) -> dict[str, str] | None:
+    if not case:
+        return None
+    question_lower = question.lower()
+    actions = (
+        ("escalat", "escalated", "Escalate", "Move this case to senior or compliance review."),
+        ("resolv", "resolved", "Resolve", "Mark this investigation complete."),
+        ("dismiss", "dismissed", "Dismiss", "Close this case as not requiring further action."),
+        ("investigat", "investigating", "Investigate", "Mark this case as actively under review."),
+    )
+    for keyword, status, label, reason in actions:
+        if keyword in question_lower:
+            return {"type": "status_change", "status": status, "label": label, "reason": reason}
+    return None
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -120,6 +137,9 @@ async def chat(request: CopilotRequest, authorization: str | None = Header(defau
     timeline = await api_get(f"/api/cases/{request.case_id}/timeline", authorization) if request.case_id else []
     answer = build_answer(case, timeline, request.page, request.question)
     tools_used = ["get_case", "get_case_timeline"] if case else ["page_context"]
+    action = proposed_action(request.question, case) if request.provider == "copilot" else None
+    if action:
+        answer += f" Proposed action: {action['label']}. This has not been executed; confirm it below if it is appropriate."
     if request.provider == "claude":
         claude_result = await claude_answer(str({"case": case, "timeline": timeline, "page": request.page}), request.question)
         if claude_result:
@@ -130,4 +150,5 @@ async def chat(request: CopilotRequest, authorization: str | None = Header(defau
         answer=answer,
         tools_used=tools_used,
         provider=request.provider if request.provider == "claude" and ANTHROPIC_API_KEY else "copilot",
+        proposed_action=action,
     )
