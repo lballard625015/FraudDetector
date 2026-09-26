@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import asyncio
 from typing import Any, Literal
 from uuid import UUID
 
@@ -31,6 +32,11 @@ class CopilotResponse(BaseModel):
     read_only: bool = True
 
 
+class ToolCall(BaseModel):
+    name: str
+    reason: str
+
+
 async def api_get(path: str, authorization: str) -> Any:
     async with httpx.AsyncClient(base_url=API_BASE_URL, timeout=10.0) as client:
         response = await client.get(path, headers={"Authorization": authorization})
@@ -41,13 +47,38 @@ async def api_get(path: str, authorization: str) -> Any:
     return response.json()
 
 
+def plan_tools(page: str, question: str, case_id: UUID | None) -> list[ToolCall]:
+    """Choose a bounded evidence plan before executing any tool."""
+    question_lower = question.lower()
+    plan: list[ToolCall] = []
+    if case_id:
+        plan.extend([
+            ToolCall(name="get_case", reason="Load the selected case state and priority."),
+            ToolCall(name="get_case_timeline", reason="Inspect the audit and analyst event history."),
+        ])
+        if any(word in question_lower for word in ("risk", "score", "alert", "evidence", "why", "review")):
+            plan.append(ToolCall(name="get_alerts", reason="Compare the linked alert evidence and risk components."))
+    elif page == "alerts" or any(word in question_lower for word in ("alert", "risk", "signal")):
+        plan.append(ToolCall(name="get_alerts", reason="Inspect the alert queue context."))
+    return plan
+
+
+async def run_tool(call: ToolCall, case_id: UUID | None, authorization: str) -> tuple[str, Any]:
+    paths = {
+        "get_case": f"/api/cases/{case_id}",
+        "get_case_timeline": f"/api/cases/{case_id}/timeline",
+        "get_alerts": "/api/alerts",
+    }
+    return call.name, await api_get(paths[call.name], authorization)
+
+
 def score_percent(value: Any) -> str:
     if value is None:
         return "unknown"
     return f"{float(value) * 100:.0f}%"
 
 
-def build_answer(case: dict[str, Any] | None, timeline: list[dict[str, Any]], page: str, question: str) -> str:
+def build_answer(case: dict[str, Any] | None, timeline: list[dict[str, Any]], evidence: Any, page: str, question: str, plan: list[ToolCall]) -> str:
     if case is None:
         page_guidance = {
             "overview": "Use the funnel to distinguish raw detections, open alerts, and active cases.",
@@ -79,7 +110,7 @@ def build_answer(case: dict[str, Any] | None, timeline: list[dict[str, Any]], pa
     return (
         f"Case {str(case.get('caseId', 'unknown'))[:8]} is currently {status} with {priority} priority. "
         f"It is linked to alert {str(alert_id)[:8] if alert_id else 'unknown'}. "
-        f"The audit trail includes {evidence}. {recommendation} "
+        f"The audit trail includes {evidence}. I checked {', '.join(call.name for call in plan)}. {recommendation} "
         "This copilot is read-only and does not change case state."
     )
 
@@ -133,10 +164,12 @@ async def claude_answer(context: str, question: str) -> str | None:
 async def chat(request: CopilotRequest, authorization: str | None = Header(default=None)) -> CopilotResponse:
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Authentication required")
-    case = await api_get(f"/api/cases/{request.case_id}", authorization) if request.case_id else None
-    timeline = await api_get(f"/api/cases/{request.case_id}/timeline", authorization) if request.case_id else []
-    answer = build_answer(case, timeline, request.page, request.question)
-    tools_used = ["get_case", "get_case_timeline"] if case else ["page_context"]
+    plan = plan_tools(request.page, request.question, request.case_id)
+    results = dict(await asyncio.gather(*(run_tool(call, request.case_id, authorization) for call in plan))) if plan else {}
+    case = results.get("get_case")
+    timeline = results.get("get_case_timeline", [])
+    answer = build_answer(case, timeline, results.get("get_alerts"), request.page, request.question, plan)
+    tools_used = list(results) if results else ["page_context"]
     action = proposed_action(request.question, case) if request.provider == "copilot" else None
     if action:
         answer += f" Proposed action: {action['label']}. This has not been executed; confirm it below if it is appropriate."

@@ -79,6 +79,11 @@ export const saveAuth = (auth: AuthResponse) => localStorage.setItem(authStorage
 export const clearAuth = () => localStorage.removeItem(authStorageKey)
 
 const json = async <T>(response: Response): Promise<T> => {
+  if (response.status === 401) {
+    clearAuth()
+    window.location.reload()
+    throw new Error('Session expired. Please sign in again.')
+  }
   if (!response.ok) throw new Error(`${response.status} ${response.statusText}`)
   return response.json() as Promise<T>
 }
