@@ -1,9 +1,9 @@
 package com.frauddetection.api.case_management;
 
 import com.frauddetection.api.audit.AuditService;
-import com.frauddetection.api.alert.Alert;
 import com.frauddetection.api.alert.AlertRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -37,12 +38,12 @@ public class CaseWorkflowService {
     }
 
     @Transactional(readOnly = true)
-    public Case get(UUID caseId) {
+    public Case get(@NonNull UUID caseId) {
         return caseRepository.findById(caseId).orElseThrow(() -> notFound(caseId));
     }
 
     @Transactional
-    public Case changeStatus(UUID caseId, String status, String resolution) {
+    public Case changeStatus(@NonNull UUID caseId, String status, String resolution) {
         if (!VALID_STATUSES.contains(status)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported case status: " + status);
         }
@@ -56,29 +57,37 @@ public class CaseWorkflowService {
             caseRecord.setEscalatedAt(caseRecord.getEscalatedAt() == null ? Instant.now() : caseRecord.getEscalatedAt());
         }
         Case saved = caseRepository.save(caseRecord);
-        alertRepository.findById(caseRecord.getAlertId()).ifPresent(alert -> {
-            alert.setStatus(status);
-            alertRepository.save(alert);
-        });
+        UUID alertId = caseRecord.getAlertId();
+        if (alertId != null) {
+            alertRepository.findById(alertId).ifPresent(alert -> {
+                alert.setStatus(status);
+                alertRepository.save(alert);
+            });
+        }
         auditService.append(caseId, "status_change", Map.of("status", status, "resolution", resolution == null ? "" : resolution));
         messagingTemplate.convertAndSend("/topic/cases", saved);
         return saved;
     }
 
     @Transactional
-    public void addNote(UUID caseId, String note, String author) {
+    public void addNote(@NonNull UUID caseId, String note, String author) {
         get(caseId);
         auditService.append(caseId, "analyst_note", Map.of("note", note, "author", author == null ? "unknown" : author));
-        messagingTemplate.convertAndSend("/topic/cases", Map.of("case_id", caseId, "event_type", "analyst_note"));
+        messagingTemplate.convertAndSend("/topic/cases", noteMessage(caseId));
     }
 
     @Transactional(readOnly = true)
-    public List<com.frauddetection.api.audit.CaseEvent> timeline(UUID caseId) {
+    public List<com.frauddetection.api.audit.CaseEvent> timeline(@NonNull UUID caseId) {
         get(caseId);
         return auditService.events(caseId);
     }
 
     private ResponseStatusException notFound(UUID caseId) {
         return new ResponseStatusException(HttpStatus.NOT_FOUND, "Case not found: " + caseId);
+    }
+
+    @NonNull
+    private Object noteMessage(@NonNull UUID caseId) {
+        return Objects.requireNonNull(Map.of("case_id", caseId, "event_type", "analyst_note"));
     }
 }

@@ -3,6 +3,7 @@ package com.frauddetection.api.account;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -41,7 +42,7 @@ public class AccountController {
     }
 
     @GetMapping("/{id}")
-    public Account get(@PathVariable UUID id) {
+    public Account get(@PathVariable @NonNull UUID id) {
         return repository.findById(id).orElseThrow(() -> notFound(id));
     }
 
@@ -52,7 +53,7 @@ public class AccountController {
     }
 
     @PutMapping("/{id}")
-    public Account update(@PathVariable UUID id, @Valid @RequestBody AccountUpdateRequest request) {
+    public Account update(@PathVariable @NonNull UUID id, @Valid @RequestBody AccountUpdateRequest request) {
         Account account = repository.findById(id).orElseThrow(() -> notFound(id));
         account.setOwnerName(request.ownerName());
         account.setRiskScore(request.riskScore() == null ? account.getRiskScore() : request.riskScore());
@@ -62,7 +63,7 @@ public class AccountController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public void delete(@PathVariable @NonNull UUID id) {
         if (!repository.existsById(id)) {
             throw notFound(id);
         }

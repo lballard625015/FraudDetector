@@ -3,7 +3,7 @@ package com.frauddetection.api.case_management;
 import com.frauddetection.api.audit.AuditService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -32,27 +32,27 @@ public class CaseController {
     }
 
     @GetMapping("/{id}")
-    public Case get(@PathVariable UUID id) {
+    public Case get(@PathVariable @NonNull UUID id) {
         return workflowService.get(id);
     }
 
     @PatchMapping("/{id}/status")
-    public Case updateStatus(@PathVariable UUID id, @Valid @RequestBody StatusRequest request) {
+    public Case updateStatus(@PathVariable @NonNull UUID id, @Valid @RequestBody StatusRequest request) {
         return workflowService.changeStatus(id, request.status(), request.resolution());
     }
 
     @PostMapping("/{id}/notes")
-    public void addNote(@PathVariable UUID id, @Valid @RequestBody NoteRequest request) {
+    public void addNote(@PathVariable @NonNull UUID id, @Valid @RequestBody NoteRequest request) {
         workflowService.addNote(id, request.note(), request.author());
     }
 
     @GetMapping("/{id}/timeline")
-    public List<com.frauddetection.api.audit.CaseEvent> timeline(@PathVariable UUID id) {
+    public List<com.frauddetection.api.audit.CaseEvent> timeline(@PathVariable @NonNull UUID id) {
         return workflowService.timeline(id);
     }
 
     @GetMapping("/{id}/verify")
-    public AuditService.VerificationResult verify(@PathVariable UUID id) {
+    public AuditService.VerificationResult verify(@PathVariable @NonNull UUID id) {
         workflowService.get(id);
         return auditService.verify(id);
     }

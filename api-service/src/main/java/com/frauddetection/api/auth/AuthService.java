@@ -9,6 +9,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -54,7 +55,7 @@ public class AuthService {
         if (session.getExpiresAt().isBefore(Instant.now())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Session expired or invalid");
         }
-        return analystRepository.findById(session.getAnalystId())
+        return analystRepository.findById(Objects.requireNonNull(session.getAnalystId()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Analyst account not found"));
     }
 

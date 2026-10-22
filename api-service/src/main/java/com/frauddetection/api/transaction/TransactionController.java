@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.http.HttpStatus;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -40,7 +41,7 @@ public class TransactionController {
     }
 
     @GetMapping("/{id}")
-    public Transaction get(@PathVariable UUID id) {
+    public Transaction get(@PathVariable @NonNull UUID id) {
         return transactionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found: " + id));
     }
@@ -59,7 +60,7 @@ public class TransactionController {
     }
 
     @PutMapping("/{id}")
-    public Transaction update(@PathVariable UUID id, @Valid @RequestBody TransactionUpdateRequest request) {
+    public Transaction update(@PathVariable @NonNull UUID id, @Valid @RequestBody TransactionUpdateRequest request) {
         Transaction transaction = transactionRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found: " + id));
         transaction.setAmount(request.amount());
@@ -74,21 +75,21 @@ public class TransactionController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void delete(@PathVariable UUID id) {
+    public void delete(@PathVariable @NonNull UUID id) {
         if (!transactionRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Transaction not found: " + id);
         }
         transactionRepository.deleteById(id);
     }
 
-    private Account findAccount(UUID id) {
+    private Account findAccount(@NonNull UUID id) {
         return accountRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account not found: " + id));
     }
 
     public record TransactionRequest(
-            UUID fromAccountId,
-            UUID toAccountId,
+            @NonNull @NotNull UUID fromAccountId,
+            @NonNull @NotNull UUID toAccountId,
             @NotNull @PositiveOrZero BigDecimal amount,
             @NotNull String currency,
             UUID deviceId,
